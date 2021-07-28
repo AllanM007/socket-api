@@ -1,6 +1,7 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 
+
 var server = http.createServer(function(request, response) {
     console.log((new Date()) + ' Received request for ' + request.url);
     response.writeHead(404);
@@ -29,6 +30,33 @@ function originIsAllowed(origin) {
   return true;
 }
 
+logInUser = () => {
+    const username = this.username.value;
+    if (username.trim()) {
+      const data = {
+        username
+      };
+      this.setState({
+        ...data
+      }, () => {
+        client.send(JSON.stringify({
+          ...data,
+          type: "userevent"
+        }));
+      });
+    }
+  }
+  
+  /* When content changes, we send the
+  current content of the editor to the server. */
+  onEditorStateChange = (text) => {
+   client.send(JSON.stringify({
+     type: "contentchange",
+     username: this.state.username,
+     content: text
+   }));
+  };
+
 wsServer.on('request', function(request) {
     if (!originIsAllowed(request.origin)) {
       // Make sure we only accept requests from an allowed origin
@@ -36,14 +64,6 @@ wsServer.on('request', function(request) {
       console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
       return;
     }
-
-    var userID = getUniqueID();
-    console.log((new Date()) + ' Recieved a new connection from origin ' + request.origin + '.');
-    
-    // You can rewrite this part of the code to accept only the requests from allowed origin
-    const connection = request.accept(null, request.origin);
-    clients[userID] = connection;
-    console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients))
     
     var connection = request.accept('echo-protocol', request.origin);
     console.log((new Date()) + ' Connection accepted.');
@@ -57,7 +77,21 @@ wsServer.on('request', function(request) {
             connection.sendBytes(message.binaryData);
         }
     });
-    connection.on('close', function(reasonCode, description) {
-        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
-    });
+
+    var userID = getUniqueID();
+    console.log((new Date()) + ' Recieved a new connection from origin ' + request.origin + '.');
+    
+    // You can rewrite this part of the code to accept only the requests from allowed origin
+    clients[userID] = connection;
+    console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients))
+
+    connection.on('close', function(connection) {
+        console.log((new Date()) + " Peer " + userID + " disconnected.");
+        const json = { type: typesDef.USER_EVENT };
+        userActivity.push(`${users[userID].username} left the document`);
+        json.data = { users, userActivity };
+        delete clients[userID];
+        delete users[userID];
+        sendMessage(JSON.stringify(json));
+      });
 });
