@@ -20,13 +20,7 @@ var getUniqueID = () => {
 
 wsServer = new WebSocketServer({
     httpServer: server,
-
-    // var userID = getUniqueID();
-    // console.log((new Date()) + ' Recieved a new connection from origin ' + request.origin + '.');
-    // // You can rewrite this part of the code to accept only the requests from allowed origin
-    // const connection = request.accept(null, request.origin);
-    // clients[userID] = connection;
-    // console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients))
+    
     autoAcceptConnections: false
 });
 
@@ -42,6 +36,14 @@ wsServer.on('request', function(request) {
       console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
       return;
     }
+
+    var userID = getUniqueID();
+    console.log((new Date()) + ' Recieved a new connection from origin ' + request.origin + '.');
+    
+    // You can rewrite this part of the code to accept only the requests from allowed origin
+    const connection = request.accept(null, request.origin);
+    clients[userID] = connection;
+    console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients))
     
     var connection = request.accept('echo-protocol', request.origin);
     console.log((new Date()) + ' Connection accepted.');
@@ -59,12 +61,3 @@ wsServer.on('request', function(request) {
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
 });
-
-// wsServer.on('request', function(request) {
-//   var userID = getUniqueID();
-//   console.log((new Date()) + ' Recieved a new connection from origin ' + request.origin + '.');
-//   // You can rewrite this part of the code to accept only the requests from allowed origin
-//   const connection = request.accept(null, request.origin);
-//   clients[userID] = connection;
-//   console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients))
-// });
